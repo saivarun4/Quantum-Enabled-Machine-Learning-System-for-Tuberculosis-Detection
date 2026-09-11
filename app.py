@@ -43,6 +43,10 @@ COS_AUTH_ENDPOINT = os.getenv("IBM_COS_AUTH_ENDPOINT", "https://iam.cloud.ibm.co
 MEDICAL_DISCLAIMER = "This AI result is decision support only. It is not a diagnosis and must be reviewed by a qualified radiologist or clinician."
 
 
+def get_runtime_port() -> int:
+  return int(os.getenv("PORT", "7860"))
+
+
 def require_api_key(api_key: str | None) -> None:
   if APP_API_KEY and not api_key:
     raise PermissionError("An API key is required")
