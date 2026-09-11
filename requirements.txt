@@ -1,0 +1,8 @@
+numpy==2.0.0
+pillow==10.4.0
+scikit-learn==1.5.2
+pennylane==0.45.1
+fastapi==0.139.2
+uvicorn==0.51.0
+python-multipart==0.0.32
+requests==2.32.3

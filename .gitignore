@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+TB_Chest_Radiography_Database/
+*.log
+*.jsonl
+.DS_Store
