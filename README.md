@@ -1,99 +1,126 @@
----
-title: TB Chest X-Ray Predictor
-emoji: 🩺
-colorFrom: blue
-colorTo: teal
-sdk: docker
-app_port: 8000
----
+# TB Chest X-Ray Predictor
 
-# TB Chest X-Ray QML API
+## Overview
 
-This repository contains a FastAPI service that serves a pre-trained quantum machine learning model for tuberculosis classification on chest X-rays.
+TB Chest X-Ray Predictor is a software application for classifying chest X-ray images as **Normal** or **Tuberculosis**. It combines a FastAPI service, a pre-trained quantum machine learning model, and a browser-based interface for interactive analysis.
 
-## Docker packaging
+The application is intended for research and decision support. It is not a medical diagnosis and must not replace review by a qualified radiologist or clinician.
 
-Build the Docker image:
+## Capabilities
+
+- Upload a chest X-ray through the browser interface or REST API.
+- Classify an image as Normal or Tuberculosis and return a confidence score.
+- Generate explainable AI visualizations using occlusion mapping and quantum-model sensitivity.
+- Create an HTML and PDF medical imaging report with patient and clinical metadata.
+- Record prediction metadata in a local JSONL log.
+- Optionally persist report artifacts through IBM Cloud Object Storage.
+- Protect prediction endpoints with an optional API key.
+- Enforce a configurable maximum upload size.
+
+## Application Architecture
+
+1. An image is uploaded through the web interface or an API request.
+2. The image is converted to grayscale, resized to 16 x 16 pixels, and normalized.
+3. The pre-trained model reduces the image features with PCA and evaluates them with a quantum circuit.
+4. The service returns the classification, confidence, report identifier, and storage status.
+5. Report generation adds model explanations and creates downloadable HTML and PDF outputs.
+
+## Requirements
+
+- Python 3.12 or later
+- The dependencies listed in `requirements.txt`
+- The included `qml_tb_classifier_model.pkl` model file
+
+## Local Setup
+
+Create and activate a virtual environment:
 
 ```bash
-docker build -t qml-tb-api .
+python -m venv .venv
 ```
 
-Run the container:
+On Windows:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+On macOS or Linux:
 
 ```bash
-docker run --rm -p 8000:8000 qml-tb-api
+source .venv/bin/activate
 ```
 
-Verify the API is running:
+Install the dependencies:
 
 ```bash
-curl http://localhost:8000/
+pip install -r requirements.txt
 ```
 
-## Docker Compose
-
-Build and start the service with Compose:
+Start the application locally:
 
 ```bash
-docker compose up --build
+uvicorn app:app --reload --port 7860
 ```
 
-## Hugging Face Spaces Deployment
+Open `http://127.0.0.1:7860/` in a browser to use the application.
 
-Create a new Hugging Face Space with:
+## API Reference
 
-- **SDK:** Docker
-- **Visibility:** Public or private, as appropriate
+### Health check
 
-Push this repository to the Space repository. Hugging Face will build the existing
-`Dockerfile` and expose the application on port `8000` using the `app_port` metadata
-above.
+```http
+GET /health
+```
 
-In the Space **Settings**, add an optional secret named `APP_API_KEY`. When set,
-the browser must send this value in the deployment access-key field. Do not commit
-the key to the repository.
+### Classify an image
 
-Hugging Face Space disk is temporary and may be reset when the Space restarts. The
-application's local report and JSONL log fallback should therefore be treated as
-temporary. IBM COS persistence requires the IBM COS environment variables described
-in [IBM_CLOUD_DEPLOYMENT.md](IBM_CLOUD_DEPLOYMENT.md), but those credentials should
-only be added as Space secrets.
+```bash
+curl -X POST http://127.0.0.1:7860/predict \
+  -F "file=@path/to/chest-xray.png"
+```
 
-After the build completes, open the Space URL and verify the health endpoint:
+The response includes `prediction`, `confidence`, `label`, `report_id`, and `storage` fields.
+
+### Generate a report
+
+Send a multipart `POST` request to `/generate-report` with these fields:
+
+- `file`: the chest X-ray image
+- `name`: patient name
+- `age`: patient age
+- `gender`: patient gender
+- `patient_id`: patient identifier
+- `referrer`: referring physician
+- `clinical_notes`: clinical notes
+
+The response includes the prediction, explainable visualizations, HTML report content, and a Base64-encoded PDF report.
+
+Interactive API documentation is available at `http://127.0.0.1:7860/docs` while the application is running.
+
+
+## Project Structure
 
 ```text
-https://YOUR-USERNAME-YOUR-SPACE.hf.space/
+app.py                         FastAPI application and web interface
+predict.py                     Command-line prediction utility
+qml_tb_classifier.py           Data preparation and quantum model logic
+qml_tb_classifier_model.pkl    Pre-trained model artifact
+requirements.txt               Python dependencies
+tests/                         Automated tests
+TB_Chest_Radiography_Database/ Training and evaluation images
 ```
 
-## Notes
+## Testing
 
-- The Docker image includes the pre-trained `qml_tb_classifier_model.pkl`.
-- Large development artifacts such as `TB_Chest_Radiography_Database/`, `.venv/`, and `tests/` are excluded from the image by `.dockerignore`.
-- The API exposes port `8000`.
+Run the test suite from the project root:
 
-## Google Cloud Deployment
+```bash
+python -m pytest -q
+```
 
-This repository includes a GitHub Actions workflow that can deploy the service to Google Cloud Run automatically.
+The tests cover image preprocessing, dataset loading, model persistence, and runtime port configuration.
 
-### Required GitHub Secrets
+## Responsible Use
 
-- `GCP_PROJECT_ID`: Your Google Cloud project ID
-- `GCP_REGION`: The Cloud Run region, e.g. `us-central1`
-- `GCP_SERVICE_ACCOUNT_KEY`: JSON key for a service account with permissions:
-  - Cloud Run Admin
-  - Storage Admin (for Cloud Build)
-  - Service Account User
-
-### Deployment behavior
-
-- The workflow runs on `push` to `main` and on manual dispatch
-- It builds the Docker image, pushes it to Google Container Registry, and deploys to Cloud Run
-- The deployed Cloud Run service is configured as public (`--allow-unauthenticated`)
-
-### How to use
-
-1. Create and configure a GitHub repository for this project.
-2. Add the required secrets in GitHub repository settings.
-3. Push the `main` branch.
-4. View the workflow under GitHub Actions.
+This application is a machine learning research system. Predictions may be affected by image quality, dataset limitations, demographic differences, and clinical context. Always treat results as decision support and require qualified clinical review before making medical decisions.
