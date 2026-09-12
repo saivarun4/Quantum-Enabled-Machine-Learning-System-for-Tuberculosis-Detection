@@ -13,9 +13,6 @@ The application is intended for research and decision support. It is not a medic
 - Generate explainable AI visualizations using occlusion mapping and quantum-model sensitivity.
 - Create an HTML and PDF medical imaging report with patient and clinical metadata.
 - Record prediction metadata in a local JSONL log.
-- Optionally persist report artifacts through IBM Cloud Object Storage.
-- Protect prediction endpoints with an optional API key.
-- Enforce a configurable maximum upload size.
 
 ## Application Architecture
 
